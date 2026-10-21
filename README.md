@@ -1,3 +1,5 @@
+[中文文档与源码研究](docs/中文/阅读导航.md) · [翻译与研究进度](docs/中文/任务清单.md)
+
 <p align="center">
   <img src="site/images/icon.png" width="104" height="104" alt="HubDeck">
 </p>
