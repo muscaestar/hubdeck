@@ -1,0 +1,14 @@
+{
+  "bravia": {
+    "label": "BRAVIA",
+    "kind": "output",
+    "deviceId": "",
+    "name": "扬声器 (2- BRAVIA Theatre U)"
+  },
+  "inzone-game": {
+    "label": "INZONE-Game",
+    "kind": "output",
+    "deviceId": "",
+    "name": "扬声器 (INZONE H9 II - Game)"
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "id": "dev.hubdeck.audio-devices",
+  "name": "音频设备",
+  "version": "0.1.0",
+  "command": "node plugin.mjs",
+  "permissions": ["audio"],
+  "actions": [
+    {
+      "id": "select",
+      "name": "切换音频设备",
+      "description": "每台设备占一个键：未连接、系统默认输出、已连接。按下切换，按系统实际状态更新。需要支持音频插件接口的 HubDeck fork。",
+      "icon": "headphones",
+      "inputs": ["press"],
+      "params": [
+        {
+          "key": "preset",
+          "label": "预设设备",
+          "type": "select",
+          "default": "bravia",
+          "options": [["bravia", "BRAVIA"], ["inzone-game", "INZONE-Game"]]
+        },
+        {"key": "deviceId", "label": "设备 ID（留空使用预设）", "type": "text", "default": ""},
+        {"key": "label", "label": "显示名称（留空使用预设）", "type": "text", "default": ""}
+      ]
+    }
+  ]
+}

@@ -2781,6 +2781,30 @@ impl Worker {
         let context = m["context"].as_str().or(m["control"].as_str()).unwrap_or("").to_string();
         let mut look = self.plugin_looks.get(&context).cloned().unwrap_or_default();
         match m["event"].as_str().unwrap_or("") {
+            "getAudioDevices" => {
+                // This worker already has COM initialised. Keep errors distinct from an empty
+                // inventory, otherwise a transient read failure looks like every device unplugged.
+                let result = audiodev::list(false).and_then(|outputs| audiodev::list(true).map(|inputs| (outputs, inputs)));
+                let reply = match result {
+                    Ok((outputs, inputs)) => serde_json::json!({"event": "audioDevices", "requestId": m["requestId"], "outputs": outputs, "inputs": inputs}),
+                    Err(error) => serde_json::json!({"event": "audioDevices", "requestId": m["requestId"], "error": error}),
+                };
+                plugins::send_to(plugin, reply);
+                return;
+            }
+            "setAudioDevice" => {
+                let result = match m["kind"].as_str() {
+                    Some("output") => audiodev::set_default_id(false, m["deviceId"].as_str().unwrap_or("")),
+                    Some("input") => audiodev::set_default_id(true, m["deviceId"].as_str().unwrap_or("")),
+                    _ => Err("kind must be output or input".into()),
+                };
+                let reply = match result {
+                    Ok(name) => serde_json::json!({"event": "audioDeviceResult", "requestId": m["requestId"], "ok": true, "name": name}),
+                    Err(error) => serde_json::json!({"event": "audioDeviceResult", "requestId": m["requestId"], "ok": false, "error": error}),
+                };
+                plugins::send_to(plugin, reply);
+                return;
+            }
             "setTitle" => look.title = m["title"].as_str().map(str::to_string),
             "flash" => {
                 // Stream Deck's showOk / showAlert: a short sign on the key would need its own timer

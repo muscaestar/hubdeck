@@ -28,6 +28,22 @@ pub fn set_default(input: bool, name: &str) -> Result<String, String> {
     Ok(d.name.clone())
 }
 
+/// Switch an exact, currently active endpoint. Plugins store ids so a similarly named
+/// hands-free/chat endpoint can never be selected in place of the intended output.
+pub fn set_default_id(input: bool, id: &str) -> Result<String, String> {
+    let devices = list(input)?;
+    let d = device_by_id(&devices, id)?;
+    platform::set_default(&d.id)?;
+    Ok(d.name.clone())
+}
+
+fn device_by_id<'a>(devices: &'a [Device], id: &str) -> Result<&'a Device, String> {
+    if id.is_empty() {
+        return Err("deviceId is required".into());
+    }
+    devices.iter().find(|d| d.id == id).ok_or_else(|| "the selected audio device is disconnected or unavailable".into())
+}
+
 /// Make the next (or previous) device the default; returns its name.
 pub fn cycle(input: bool, step: i32) -> Result<String, String> {
     let devices = list(input)?;
@@ -133,7 +149,7 @@ mod platform {
 
 #[cfg(all(test, windows))]
 mod tests {
-    /// Lists (never changes) the audio devices: `cargo test -p hubdeck list_audio -- --ignored --nocapture`
+    /// Lists and re-selects the current default: opt-in only, since this sets every audio role.
     #[test]
     #[ignore]
     fn list_audio_devices() {
@@ -144,5 +160,27 @@ mod tests {
         let current = super::list(false).unwrap().into_iter().find(|d| d.default).expect("a default output");
         super::platform::set_default(&current.id).expect("IPolicyConfig works");
         assert!(super::list(false).unwrap().iter().any(|d| d.default && d.id == current.id));
+    }
+}
+
+#[cfg(test)]
+mod plugin_tests {
+    use super::{Device, device_by_id};
+
+    #[test]
+    fn endpoint_selection_never_falls_back_to_a_similar_name() {
+        let devices = vec![Device { id: "chat".into(), name: "INZONE Chat".into(), default: true }];
+        assert!(device_by_id(&devices, "game").is_err());
+        assert!(device_by_id(&devices, "").is_err());
+        assert_eq!(device_by_id(&devices, "chat").unwrap().name, "INZONE Chat");
+    }
+
+    #[test]
+    fn endpoint_selection_uses_id_even_with_duplicate_names() {
+        let devices = vec![
+            Device { id: "one".into(), name: "Speakers".into(), default: false },
+            Device { id: "two".into(), name: "Speakers".into(), default: true },
+        ];
+        assert!(device_by_id(&devices, "two").unwrap().default);
     }
 }
